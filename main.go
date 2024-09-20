@@ -50,7 +50,7 @@ func main() {
 }
 
 func processLuaFile(config config) {
-	token, err := fetchAccessToken(config.ClientID, clientSecret)
+	token, err := fetchAccessToken(config.ClientID, config.ClientSecret)
 	if err != nil {
 		// if there is an error in retrieving the token, stop the program
 		log.Fatalf("Error retrieving token: %v", err)
