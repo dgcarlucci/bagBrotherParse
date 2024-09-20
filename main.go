@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/csv"
 	"encoding/json"
-	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -24,67 +23,53 @@ const (
 	namespace    = "static-us"
 )
 
-func main() {
-	var (
-		inputFilePath   *string
-		outputDirectory *string
-		serverName      *string
-		characterName   *string
-		clientID        *string
-		clientSecret    *string
-	)
-
-	// Define flags
-	inputFilePath = flag.String("f", "", "Path to the input file")
-	outputDirectory = flag.String("o", "", "Output directory")
-	serverName = flag.String("s", "", "Server name")
-	characterName = flag.String("c", "", "Character name")
-	clientID = flag.String("i", "", "Client ID")
-	clientSecret = flag.String("t", "", "Client Secret")
-
-	flag.Parse()
-
-	// Check if required flags are provided
-	if *inputFilePath == "" || *outputDirectory == "" || *serverName == "" || *characterName == "" || *clientID == "" || *clientSecret == "" {
-		fmt.Print("Usage: go run main.go -f <input_file> -o <output_directory> -s <server_name> -c <character_name> -i <client_id> -t <client_secret>")
-		os.Exit(1)
-	}
-
-	processLuaFile(*inputFilePath, *outputDirectory, *serverName, *characterName, *clientID, *clientSecret)
+type config struct {
+	InputFilePath   string `json:"input_file_path"`
+	OutputDirectory string `json:"output_directory"`
+	ServerName      string `json:"server_name"`
+	CharacterName   string `json:"character_name"`
+	ClientID        string `json:"client_id"`
+	ClientSecret    string `json:"client_secret"`
 }
 
-func processLuaFile(inputFilePath string, outputDirectory string, serverName string, characterName string, clientID string, clientSecret string) {
-	token, err := fetchAccessToken(clientID, clientSecret)
+func main() {
+	var config config
+
+	data, err := ioutil.ReadFile("config.json")
 	if err != nil {
 		log.Fatal(err)
 	}
+	if err := json.Unmarshal(data, &config); err != nil {
+		log.Fatal(err)
+	}
+	processLuaFile(config)
+}
 
-	data, err := ioutil.ReadFile(inputFilePath)
+func processLuaFile(config config) {
+	token, err := fetchAccessToken(config.ClientID, clientSecret)
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	if err := os.MkdirAll(outputDirectory, os.ModePerm); err != nil {
+	data, err := ioutil.ReadFile(config.InputFilePath)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if err := os.MkdirAll(config.OutputDirectory, os.ModePerm); err != nil {
 		log.Fatalf("Error creating directory: %v", err)
 	}
-
-	fileInfo, err := os.Stat(inputFilePath)
+	fileInfo, err := os.Stat(config.InputFilePath)
 	if err != nil {
 		log.Fatalf("Error getting file info: %v", err)
 	}
-
 	timestamp := fileInfo.ModTime()
 	filename := timestamp.Format("2006-01-02T15-04-05") + ".csv"
-	csvFilePath := filepath.Join(outputDirectory, filename)
-
+	csvFilePath := filepath.Join(config.OutputDirectory, filename)
 	L := lua.NewState()
 	defer L.Close()
-
 	if err := L.DoString(string(data)); err != nil {
 		log.Fatal(err)
 	}
-
-	processLuaTable(L, serverName, characterName, token, csvFilePath)
+	processLuaTable(L, config.ServerName, config.CharacterName, token, csvFilePath)
 }
 
 func processLuaTable(L *lua.LState, serverName string, characterName string, token string, csvFilePath string) {
