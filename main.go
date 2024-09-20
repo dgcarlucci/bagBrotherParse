@@ -35,24 +35,29 @@ type config struct {
 func main() {
 	var config config
 
+	log.Println("reading file..")
 	data, err := ioutil.ReadFile("config.json")
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	if err := json.Unmarshal(data, &config); err != nil {
 		log.Fatal(err)
 	}
+	log.Println(config.CharacterName)
+
 	processLuaFile(config)
 }
 
 func processLuaFile(config config) {
 	token, err := fetchAccessToken(config.ClientID, clientSecret)
 	if err != nil {
-		log.Fatal(err)
+		// if there is an error in retrieving the token, stop the program
+		log.Fatalf("Error retrieving token: %v", err)
 	}
 	data, err := ioutil.ReadFile(config.InputFilePath)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Error reading input patch: %v", err)
 	}
 	if err := os.MkdirAll(config.OutputDirectory, os.ModePerm); err != nil {
 		log.Fatalf("Error creating directory: %v", err)
