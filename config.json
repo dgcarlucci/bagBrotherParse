@@ -1,0 +1,8 @@
+{
+    "input_file_path": "C:/World of Warcraft/Addons/BrotherBags.lua",
+    "output_directory": "C:/Temp/BrotherBags/",
+    "server_name": "Wild Growth",
+    "character_name": "Francisco",
+    "client_id": "your client id",
+    "client_secret": "your client secret"
+}
